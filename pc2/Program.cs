@@ -4,68 +4,60 @@ using System.Text.RegularExpressions;
 
 Console.WriteLine("Hello, World!");
 
-var html = await Load("http://hebrewbooks.org/beis");
+Selector.ConvertToSelector("div#mydiv.class_name \"div#yourdiv.class_name222”\r\n");
+//var html = await Load("http://hebrewbooks.org/beis");
 
-var cleanHtml = new Regex("\\s[^ ]").Replace(html, "");
-var htmlLines = new Regex("<(.*?)>").Split(cleanHtml).Where(s => s.Length > 0);
-
-var htmlElement = "<div> id=\"my-id\" class=\"my-class-1 my-class-2\" width=\"100%\">text</div>";
-var attributes = new Regex("([^\\s]*?)=\"(.*?)\"").Matches(htmlElement);
+//var cleanHtml = new Regex("\\s[^ ]").Replace(html, "");
+//var html = await Load("https://mail.google.com/mail/u/0/#inbox");
+var html = await Load("https://chani-k.co.il/sherlok-game/");
+html = new Regex("[\\r\\n\\t]").Replace(new Regex("\\s{2,}").Replace(html, ""), "");
+var htmlLines = new Regex("<(.*?)>").Split(html).Where(s => s.Length > 0);//divide the html to tags
 
 HtmlElement root = new HtmlElement();
-HtmlElement current = new HtmlElement();
-bool flag=false;
+HtmlElement current = root;
 foreach (var line in htmlLines)
 {
-    if (line.Equals("/html"))
-        Console.WriteLine();
-    else
+    string[] words = line.Split(' ');
+    if (!words[0].Equals("/html"))//the end of the html
     {
-        if (line.StartsWith("/"))//תווית סוגרת
+        if (words[0].StartsWith("/"))//תווית סוגרת
+            current = current.Parent;
+        else if (HtmlHelper.Instance.HtmlTags.Contains(words[0]) || HtmlHelper.Instance.HtmlVoidTags.Contains(words[0]))//תגית פותחת
         {
-            current=current.Parent;
-            continue;  
-        }
-        if (HtmlHelper.Instance.HtmlTags.Contains(line)|| HtmlHelper.Instance.HtmlVoidTags.Contains(line))//תגית פותחת
-        {
-            flag = true;
-            HtmlElement newElement=new HtmlElement();
+            HtmlElement newElement = new HtmlElement();
+            newElement.Parent = current;
+            newElement.Name = words[0];
             current.Children.Add(newElement);
             current = newElement;
-            continue;
-        }
-        //if ()
-        //{
-        //    flag=true;
-        //    HtmlElement newElement = new HtmlElement();
-        //    current.Children.Add(newElement);
-        //    current = newElement;
-        //}
-        else
+            if (line.IndexOf(' ') > 0)//there is attributes
             {
-            //current.InnerHtml = line;
-            var attribute = new Regex("([^\\s]*?)=\"(.*?)\"").Matches(line);
-            //foreach (string attr in attribute)
-            //{
-            //    if (attr.StartsWith("id"))
-            //        current.Id = attr;
-            //    else if(attr.StartsWith("name"))
-            //        current.Name = attr;
-            //    else if(attr.StartsWith("class"))
-            //    {
-            //        var a=attr.Split(" ");
-            //        current.Classes.Add(attr);
-            //    }
-            //    else
-            //        current.Attributes.Add(attr);
-            //}
-            
+                var attributes = new Regex("([^\\s]*?)=\"(.*?)\"").Matches(line.Substring(line.IndexOf(' '))).ToList();
+                foreach (var attribute in attributes)
+                {
+                    string[] arr = attribute.ToString().Split("=");
+                    if (arr[0].Equals("id"))
+                        current.Id = arr[1];
+                    else if (arr[0].Equals("class"))
+                    {
+                        current.Classes = arr[1].Split(" ").ToList();
+                    }
+                    else
+                        current.Attributes.Add(arr[0], arr[1]);
+                }
+            }
+            if (HtmlHelper.Instance.HtmlVoidTags.Contains(words[0]))//אם הסגירה היא באותה שורה, ללא תווית סוגרת
+            {
+                current = current.Parent;
+            }
+        }
+        else//the context of the tag
+        {
+            current.InnerHtml = line;
         }
     }
 }
 
-
-Console.ReadLine();
+Console.WriteLine();
 
 
 async Task<string> Load(string url)
