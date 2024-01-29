@@ -9,56 +9,58 @@ Selector.ConvertToSelector("div#mydiv.class_name \"div#yourdiv.class_name222”\
 
 //var cleanHtml = new Regex("\\s[^ ]").Replace(html, "");
 //var html = await Load("https://mail.google.com/mail/u/0/#inbox");
+
 var html = await Load("https://chani-k.co.il/sherlok-game/");
 html = new Regex("[\\r\\n\\t]").Replace(new Regex("\\s{2,}").Replace(html, ""), "");
 var htmlLines = new Regex("<(.*?)>").Split(html).Where(s => s.Length > 0);//divide the html to tags
-
-HtmlElement root = new HtmlElement();
-HtmlElement current = root;
-foreach (var line in htmlLines)
+HtmlElement Serialize(IEnumerable<string> htmlLines)
 {
-    string[] words = line.Split(' ');
-    if (!words[0].Equals("/html"))//the end of the html
+
+    HtmlElement root = new HtmlElement();
+    HtmlElement current = root;
+    foreach (var line in htmlLines)
     {
-        if (words[0].StartsWith("/"))//תווית סוגרת
-            current = current.Parent;
-        else if (HtmlHelper.Instance.HtmlTags.Contains(words[0]) || HtmlHelper.Instance.HtmlVoidTags.Contains(words[0]))//תגית פותחת
+        string[] words = line.Split(' ');
+        if (!words[0].Equals("/html"))//the end of the html
         {
-            HtmlElement newElement = new HtmlElement();
-            newElement.Parent = current;
-            newElement.Name = words[0];
-            current.Children.Add(newElement);
-            current = newElement;
-            if (line.IndexOf(' ') > 0)//there is attributes
+            if (words[0].StartsWith("/"))//תווית סוגרת
+                current = current.Parent;
+            else if (HtmlHelper.Instance.HtmlTags.Contains(words[0]) || HtmlHelper.Instance.HtmlVoidTags.Contains(words[0]))//תגית פותחת
             {
-                var attributes = new Regex("([^\\s]*?)=\"(.*?)\"").Matches(line.Substring(line.IndexOf(' '))).ToList();
-                foreach (var attribute in attributes)
+                HtmlElement newElement = new HtmlElement();
+                newElement.Parent = current;
+                newElement.Name = words[0];
+                current.Children.Add(newElement);
+                current = newElement;
+                if (line.IndexOf(' ') > 0)//there is attributes
                 {
-                    string[] arr = attribute.ToString().Split("=");
-                    if (arr[0].Equals("id"))
-                        current.Id = arr[1];
-                    else if (arr[0].Equals("class"))
+                    var attributes = new Regex("([^\\s]*?)=\"(.*?)\"").Matches(line.Substring(line.IndexOf(' '))).ToList();
+                    foreach (var attribute in attributes)
                     {
-                        current.Classes = arr[1].Split(" ").ToList();
+                        string[] arr = attribute.ToString().Split("=");
+                        if (arr[0].Equals("id"))
+                            current.Id = arr[1];
+                        else if (arr[0].Equals("class"))
+                        {
+                            current.Classes = arr[1].Split(" ").ToList();
+                        }
+                        else
+                            current.Attributes.Add(arr[0], arr[1]);
                     }
-                    else
-                        current.Attributes.Add(arr[0], arr[1]);
+                }
+                if (HtmlHelper.Instance.HtmlVoidTags.Contains(words[0]))//אם הסגירה היא באותה שורה, ללא תווית סוגרת
+                {
+                    current = current.Parent;
                 }
             }
-            if (HtmlHelper.Instance.HtmlVoidTags.Contains(words[0]))//אם הסגירה היא באותה שורה, ללא תווית סוגרת
+            else//the context of the tag
             {
-                current = current.Parent;
+                current.InnerHtml = line;
             }
         }
-        else//the context of the tag
-        {
-            current.InnerHtml = line;
-        }
     }
+    return root;
 }
-
-Console.WriteLine();
-
 
 async Task<string> Load(string url)
 {

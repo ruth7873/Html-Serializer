@@ -26,7 +26,7 @@ namespace pc2
         public IEnumerable<HtmlElement> Descendants()
         {
             Queue<HtmlElement> queue = new Queue<HtmlElement>();
-            queue.Enqueue(root);
+            queue.Enqueue(this);
             while (queue.Count > 0)
             {
                 HtmlElement element = queue.Dequeue();
@@ -39,7 +39,7 @@ namespace pc2
         }
         public IEnumerable<HtmlElement> Ancestors()
         {
-            HtmlElement element = root;
+            HtmlElement element = this;
             while (element != null)
             {
                 yield return element;
@@ -55,15 +55,25 @@ namespace pc2
                     return false;
             return true;
         }
-        public IEnumerable<HtmlElement> FindElementBySelector(Selector selector, List<HtmlElement> list)
+        public IEnumerable<HtmlElement> FindElementBySelector(Selector selector, HashSet<HtmlElement> list)
         {
-           
-            FindElementBySelector(selector.Child, list);
-            return list;
+            if (selector == null)
+            {
+                return list;
+            }
+            HashSet<HtmlElement> l = new HashSet<HtmlElement>();
+            foreach (var li in list)
+            { 
+                foreach (var item in li.Descendants())
+                {
+                    if (CheckSelector(item, selector))
+                        l.Add(item);
+                }
+            }
+            return FindElementBySelector(selector.Child, l);
         }
-        public IEnumerable<HtmlElement> FindElementBySelectorShellFunction(Selector selector)
-        {
-                return FindElementBySelector(selector,this.Descendants().ToList().FindAll(d => CheckSelector(d, selector)));
-        }
+        //public IEnumerable<HtmlElement> FindElementBySelectorShellFunction(Selector selector)
+        //{
+        //}
     }
 }
