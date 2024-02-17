@@ -93,11 +93,11 @@ namespace pc2
                 stringBuilder.AppendLine($"   {className}");
             }
             stringBuilder.AppendLine($"InnerHtml: {InnerHtml}");
-            stringBuilder.AppendLine($"Parent: {Parent?.Id ?? "null"}"); // Parent might be null
+            stringBuilder.AppendLine($"Parent: {Parent?.Id ?? Parent?.Name?? "null"}"); // Parent might be null
             stringBuilder.AppendLine("Children:");
             foreach (var child in Children)
             {
-                stringBuilder.AppendLine($"   {child.Id}");
+                stringBuilder.AppendLine($"   {child.Name ?? child.Id}");
             }
 
             return stringBuilder.ToString();
