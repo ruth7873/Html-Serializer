@@ -1,18 +1,32 @@
-﻿// See https://aka.ms/new-console-template for more information
-using pc2;
+﻿using pc2;
 using System.Text.RegularExpressions;
 
-Console.WriteLine("Hello, World!");
+var html = await Load("https://chani-k.co.il/sherlok-game/");//loading html from website 
 
-Selector.ConvertToSelector("div#mydiv.class_name \"div#yourdiv.class_name222”\r\n");
-//var html = await Load("http://hebrewbooks.org/beis");
-
-//var cleanHtml = new Regex("\\s[^ ]").Replace(html, "");
-//var html = await Load("https://mail.google.com/mail/u/0/#inbox");
-
-var html = await Load("https://chani-k.co.il/sherlok-game/");
 html = new Regex("[\\r\\n\\t]").Replace(new Regex("\\s{2,}").Replace(html, ""), "");
 var htmlLines = new Regex("<(.*?)>").Split(html).Where(s => s.Length > 0);//divide the html to tags
+var root = Serialize(htmlLines);
+Console.WriteLine("============print the tree=======");
+PrintTree(root);
+
+Console.WriteLine("===========check 1 - div#copyright==============");
+Check(Selector.ConvertToSelector("div#copyright"));
+Console.WriteLine("===========check 2 - div img====================");
+Check(Selector.ConvertToSelector("div img"));
+Console.WriteLine("===========check 3 - a img======================");
+Check(Selector.ConvertToSelector("a img"));
+void Check(Selector selector)
+{
+    var result = root.Query(selector);
+    result.ToList().ForEach(element => { Console.WriteLine(element); });
+}
+void PrintTree(HtmlElement root)
+{
+    if (root == null)
+        return;
+    Console.WriteLine(root.ToString());
+    for (int i = 0; i < root.Children.Count; i++) { PrintTree(root.Children[i]); }
+}
 HtmlElement Serialize(IEnumerable<string> htmlLines)
 {
 
@@ -61,7 +75,6 @@ HtmlElement Serialize(IEnumerable<string> htmlLines)
     }
     return root;
 }
-
 async Task<string> Load(string url)
 {
     HttpClient client = new HttpClient();
@@ -69,3 +82,6 @@ async Task<string> Load(string url)
     var html = await response.Content.ReadAsStringAsync();
     return html;
 }
+
+Console.ReadKey();
+
